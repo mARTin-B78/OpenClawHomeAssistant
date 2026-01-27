@@ -1,0 +1,29 @@
+name: Papur (Clawdbot)
+version: "0.1.0"
+slug: papur_clawdbot
+description: Run Clawdbot (Papur) as a Home Assistant add-on.
+url: https://github.com/YOURNAME/ha-addon-papur
+arch:
+  - amd64
+startup: services
+boot: auto
+init: false
+hassio_api: false
+homeassistant_api: false
+host_network: true
+map:
+  - addon_config:rw
+options:
+  telegram_bot_token: ""
+  timezone: "Europe/Sofia"
+  homeassistant_token: ""
+  mikrotik_host: "192.168.88.1"
+  mikrotik_ssh_user: "papur"
+  mikrotik_ssh_key_path: "/data/keys/mikrotik_papur_nopw"
+schema:
+  telegram_bot_token: str
+  timezone: str
+  homeassistant_token: str?
+  mikrotik_host: str
+  mikrotik_ssh_user: str
+  mikrotik_ssh_key_path: str
