@@ -5,7 +5,10 @@ FROM ${BUILD_FROM}
 # OpenClaw requires Node 20+, so we install a Node 20 musl build directly.
 ARG NODE_VERSION=22.12.0
 
+# Base image may not include community repo; cmake lives there.
 RUN apk add --no-cache \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/v3.18/main \
+    --repository=https://dl-cdn.alpinelinux.org/alpine/v3.18/community \
     bash \
     git \
     openssh-client \
@@ -22,7 +25,9 @@ RUN apk add --no-cache \
     pax-utils \
     python3 \
     nginx \
-    ttyd
+    ttyd \
+    make \
+    cmake
 
 # Install Node.js 22+ (musl build) from unofficial builds.
 # Router/base image Alpine may ship an older libstdc++; we pull a newer libstdc++ from edge to satisfy Node's C++ symbols.
@@ -46,8 +51,8 @@ RUN set -eu; \
 # IMPORTANT: OpenClaw declares some native packages as optionalDependencies.
 # On HAOS/Alpine we skip optional deps to avoid install-time native builds.
 RUN npm config set fund false && npm config set audit false \
- && npm config set omit optional \
- && NPM_CONFIG_OMIT=optional npm install -g --omit=optional openclaw@2026.1.30
+ && npm install -g xpm@0.16.3 \
+ && npm install -g openclaw@2026.1.30
 
 COPY run.sh /run.sh
 COPY nginx.conf.tpl /etc/nginx/nginx.conf.tpl
