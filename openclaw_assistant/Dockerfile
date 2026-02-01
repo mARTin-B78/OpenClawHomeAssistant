@@ -22,7 +22,10 @@ RUN apk add --no-cache \
     pax-utils \
     python3 \
     nginx \
-    ttyd
+    ttyd \
+    # Build tools (needed for native deps like node-llama-cpp on Alpine/musl)
+    build-base \
+    cmake
 
 # Install Node.js 22+ (musl build) from unofficial builds.
 # Router/base image Alpine may ship an older libstdc++; we pull a newer libstdc++ from edge to satisfy Node's C++ symbols.
@@ -43,8 +46,11 @@ RUN set -eu; \
   /usr/local/bin/node -v; /usr/local/bin/npm -v
 
 # Install OpenClaw globally
+# NOTE: On Alpine/musl, optional native deps may still attempt to build.
+# We include build tools above to avoid install-time failures.
 RUN npm config set fund false && npm config set audit false \
  && npm config set omit optional \
+ && npm install -g xpm@0.16.3 \
  && NPM_CONFIG_OMIT=optional npm install -g --omit=optional openclaw@2026.1.30
 
 COPY run.sh /run.sh
