@@ -44,8 +44,7 @@ RUN set -eu; \
 
 # Install OpenClaw globally
 RUN npm config set fund false && npm config set audit false \
- && npm config set omit optional \
- && NPM_CONFIG_OMIT=optional npm install -g --omit=optional openclaw@2026.1.30
+ && npm install -g openclaw@2026.1.29
 
 COPY run.sh /run.sh
 COPY nginx.conf.tpl /etc/nginx/nginx.conf.tpl
