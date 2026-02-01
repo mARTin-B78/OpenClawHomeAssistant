@@ -5,11 +5,7 @@ FROM ${BUILD_FROM}
 # OpenClaw requires Node 20+, so we install a Node 20 musl build directly.
 ARG NODE_VERSION=22.12.0
 
-# NOTE: HA add-on base images sometimes ship with a limited /etc/apk/repositories.
-# We explicitly enable Alpine main+community to ensure cmake/build-base are available.
 RUN apk add --no-cache \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/v3.18/main \
-    --repository=https://dl-cdn.alpinelinux.org/alpine/v3.18/community \
     bash \
     git \
     openssh-client \
@@ -26,10 +22,7 @@ RUN apk add --no-cache \
     pax-utils \
     python3 \
     nginx \
-    ttyd \
-    # Build tools (needed for native deps like node-llama-cpp on Alpine/musl)
-    build-base \
-    cmake
+    ttyd
 
 # Install Node.js 22+ (musl build) from unofficial builds.
 # Router/base image Alpine may ship an older libstdc++; we pull a newer libstdc++ from edge to satisfy Node's C++ symbols.
@@ -50,12 +43,13 @@ RUN set -eu; \
   /usr/local/bin/node -v; /usr/local/bin/npm -v
 
 # Install OpenClaw globally
-# NOTE: On Alpine/musl, optional native deps may still attempt to build.
-# We include build tools above to avoid install-time failures.
+# IMPORTANT: OpenClaw declares some native packages as optionalDependencies.
+# On HAOS/Alpine we want to skip them to avoid install-time native builds.
 RUN npm config set fund false && npm config set audit false \
+ && npm config set optional false \
  && npm config set omit optional \
- && npm install -g xpm@0.16.3 \
- && NPM_CONFIG_OMIT=optional npm install -g --omit=optional openclaw@2026.1.30
+ && NPM_CONFIG_OPTIONAL=false NPM_CONFIG_OMIT=optional \
+    npm install -g --omit=optional --no-optional openclaw@2026.1.30
 
 COPY run.sh /run.sh
 COPY nginx.conf.tpl /etc/nginx/nginx.conf.tpl
