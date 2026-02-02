@@ -65,9 +65,20 @@ You have two common setups:
 If your Home Assistant is already exposed via HTTPS (Nabu Casa, reverse proxy, etc.), use that.
 This avoids browser security issues.
 
-#### Option 2: LAN access (http://192.168.x.x)
-If you want to open it directly on your LAN, you must ensure OpenClaw binds to LAN.
-In the terminal:
+#### Option 2: LAN access (http://192.168.x.x) — using add-on options (recommended)
+The easiest way to enable LAN access is via the add-on configuration:
+
+1. Go to Home Assistant → **Settings → Add-ons → OpenClaw Assistant → Configuration**
+2. Set the following options:
+   - `gateway_bind_mode`: **lan** (enables LAN binding; use **loopback** for local-only access)
+   - `gateway_port`: **18789** (or your preferred port)
+   - `allow_insecure_auth`: **true** (required for HTTP access; see section 4 below)
+3. Restart the add-on
+
+The add-on will automatically update OpenClaw's configuration on startup.
+
+#### Option 3: LAN access — manual configuration (advanced)
+If you prefer to configure manually via terminal:
 
 ```sh
 openclaw config set gateway.bind lan
@@ -120,11 +131,18 @@ Put the gateway behind HTTPS (recommended long-term).
 Access it as `http://localhost:18789` using SSH port forwarding from your computer.
 
 ### Option C — Allow insecure auth (quick workaround; less secure)
-In the terminal:
 
+**Via add-on configuration (recommended)**:
+1. Go to Home Assistant → **Settings → Add-ons → OpenClaw Assistant → Configuration**
+2. Set `allow_insecure_auth`: **true**
+3. Restart the add-on
+
+**Via terminal (manual)**:
 ```sh
 openclaw config set gateway.controlUi.allowInsecureAuth true
 ```
+
+Then restart the add-on.
 
 This allows using the Control UI over LAN HTTP.
 
@@ -132,10 +150,27 @@ This allows using the Control UI over LAN HTTP.
 
 ## 5) Add-on options (custom / HA-specific)
 
-This add-on intentionally keeps options minimal. See `openclaw_assistant/config.yaml`.
+This add-on keeps options minimal but practical. See `openclaw_assistant_dev/config.yaml` for the full schema.
+
+### Gateway Network Settings
+Control how the OpenClaw gateway binds to the network:
+
+- **`gateway_bind_mode`** (string: **loopback** or **lan**, default **loopback**)
+  - **loopback**: Bind to 127.0.0.1 only — secure, local access only
+  - **lan**: Bind to all interfaces — accessible from your local network
+
+- **`gateway_port`** (int, default **18789**)
+  - Port number for the gateway to listen on
+
+- **`allow_insecure_auth`** (bool, default **false**)
+  - Allow HTTP authentication for gateway access on LAN
+  - **WARNING**: Only enable if using HTTP (not HTTPS) for `gateway_public_url`
+  - Required for browser access over HTTP (see section 4)
+
+These settings are applied automatically on add-on startup. No need to run `openclaw config` commands manually.
 
 ### Terminal
-- `enable_terminal` (default **true**)
+- `enable_terminal` (bool, default **true**)
 
 Security note: the terminal gives shell access inside the add-on container.
 
@@ -154,6 +189,10 @@ For custom automations that need SSH access to a router/firewall or other LAN de
 How to provide the key:
 - Put the private key file under the add-on config directory so it appears in-container at `/data/keys/...`
 - Recommended permissions: `chmod 600`
+
+### Session cleanup
+- `clean_session_locks_on_start` (bool, default **true**) — Remove stale lock files on startup
+- `clean_session_locks_on_exit` (bool, default **true**) — Remove stale lock files on shutdown
 
 ---
 
