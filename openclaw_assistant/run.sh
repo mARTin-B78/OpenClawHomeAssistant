@@ -21,10 +21,19 @@ TZNAME=$(jq -r '.timezone // "Europe/Sofia"' "$OPTIONS_FILE")
 GW_PUBLIC_URL=$(jq -r '.gateway_public_url // empty' "$OPTIONS_FILE")
 HA_TOKEN=$(jq -r '.homeassistant_token // empty' "$OPTIONS_FILE")
 ENABLE_TERMINAL=$(jq -r '.enable_terminal // true' "$OPTIONS_FILE")
-TERMINAL_PORT=$(jq -r '.terminal_port // 7681' "$OPTIONS_FILE")
+TERMINAL_PORT_RAW=$(jq -r '.terminal_port // 7681' "$OPTIONS_FILE")
+
+# SECURITY: Validate TERMINAL_PORT to prevent nginx config injection
+# Only allow numeric values in valid port range (1024-65535)
+if [[ "$TERMINAL_PORT_RAW" =~ ^[0-9]+$ ]] && [ "$TERMINAL_PORT_RAW" -ge 1024 ] && [ "$TERMINAL_PORT_RAW" -le 65535 ]; then
+  TERMINAL_PORT="$TERMINAL_PORT_RAW"
+else
+  echo "ERROR: Invalid terminal_port '$TERMINAL_PORT_RAW'. Must be numeric 1024-65535. Using default 7681."
+  TERMINAL_PORT="7681"
+fi
 
 echo "DEBUG: enable_terminal config value: '$ENABLE_TERMINAL'"
-echo "DEBUG: terminal_port config value: '$TERMINAL_PORT'"
+echo "DEBUG: terminal_port config value: '$TERMINAL_PORT' (validated)"
 
 # Generic router SSH settings
 ROUTER_HOST=$(jq -r '.router_ssh_host // empty' "$OPTIONS_FILE")
@@ -244,10 +253,7 @@ GW_PID=$!
 
 # Start web terminal (optional)
 # Kill any stray ttyd processes from previous runs to avoid port conflicts
-TTYD_PATTERN="ttyd .* -i 127.0.0.1 .* -p ${TERMINAL_PORT} .* -b /terminal"
-if pgrep -f "$TTYD_PATTERN" >/dev/null 2>&1; then
-  pkill -f "$TTYD_PATTERN" || true
-fi
+pkill -f "ttyd.*-p.*-b /terminal" || true
 
 if [ "$ENABLE_TERMINAL" = "true" ] || [ "$ENABLE_TERMINAL" = "1" ]; then
   echo "Starting web terminal (ttyd) on 127.0.0.1:${TERMINAL_PORT} ..."
