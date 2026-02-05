@@ -244,7 +244,10 @@ GW_PID=$!
 
 # Start web terminal (optional)
 # Kill any stray ttyd processes from previous runs to avoid port conflicts
-pkill -f "ttyd.*-p.*-b /terminal" || true
+TTYD_PATTERN="ttyd .* -i 127.0.0.1 .* -p ${TERMINAL_PORT} .* -b /terminal"
+if pgrep -f "$TTYD_PATTERN" >/dev/null 2>&1; then
+  pkill -f "$TTYD_PATTERN" || true
+fi
 
 if [ "$ENABLE_TERMINAL" = "true" ] || [ "$ENABLE_TERMINAL" = "1" ]; then
   echo "Starting web terminal (ttyd) on 127.0.0.1:${TERMINAL_PORT} ..."
